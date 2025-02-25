@@ -41,8 +41,18 @@ def run_indvididual(generation, mode, filename):
 
     vid_name = filename + "_gen" + str(generation)
     vid_path = os.path.join(this_dir, "videos")
+    
+    print(f"\n===== Running Individual from Generation {generation} =====")
+    print(f"The simulation will display SNN firing statistics after completion")
+    print(f"This will show you how often each SNN neuron fired during the run\n")
 
-    run(ITERS, genome, mode, vid_name, vid_path)
+    fitness, total_fires = run(ITERS, genome, mode, vid_name, vid_path)
+    
+    print(f"\n===== Results Summary =====")
+    print(f"Fitness: {fitness}")
+    print(f"Total SNN Fires: {total_fires}")
+    
+    return fitness, total_fires
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='RL')

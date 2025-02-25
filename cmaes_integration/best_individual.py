@@ -1,44 +1,64 @@
 """
-Visualize the best individual so far, pulling from output.csv.
+Simple script to run the best individual from an output CSV file.
 
-Author: James Gaskell
-February 6th, 2025
+Author: Thomas Breimer
+January 29th, 2025
 """
 
 import os
 import argparse
-import pandas
+import pathlib
+import pandas as pd
 from snn_sim.run_simulation import run
 
 ITERS = 1000
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def visualize_best(filename):
+def run_best(filename):
     """
-    Look at output.csv and continuously run best individual.
-    Assumes csv names are their best achieved fitnesses
-    Continually searches for the lowest best fitness, plays the visualization and repeats
+    Run the best individual from a csv file.
+    
+    Parameters:
+        filename (string): CSV file to look at. Should be in /data directory.
     """
-
-    while True:
-        path = os.path.join(ROOT_DIR, "data", filename)
-        df = pandas.read_csv(path)
-        best_fitness = min(df["best_fitness"])
-        row = df.loc[df['best_fitness'] == best_fitness]
-        genome = row.values.tolist()[0][2:]
-        run(ITERS, genome, "s")
-
+    
+    this_dir = pathlib.Path(__file__).parent.resolve()
+    df = pd.read_csv(os.path.join(this_dir, os.path.join("data", filename)))
+    
+    # Get the individual with the highest (or lowest) fitness
+    # Assuming lower fitness is better (minimization problem)
+    best_row = df.loc[df['fitness'].idxmin()]
+    best_gen = best_row['generation']
+    best_fitness = best_row['fitness']
+    
+    # Get the genome
+    genome = best_row.values.tolist()[2:]  # Skip generation and fitness columns
+    
+    print(f"\n===== Running Best Individual =====")
+    print(f"From Generation: {best_gen}")
+    print(f"Fitness: {best_fitness}")
+    print(f"The simulation will display SNN firing statistics after completion")
+    print(f"This will show you how often each SNN neuron fired during the run\n")
+    
+    # Run the simulation
+    fitness, total_fires = run(ITERS, genome, "s")
+    
+    print(f"\n===== Results Summary =====")
+    print(f"Generation: {best_gen}")
+    print(f"Original Fitness: {best_fitness}")
+    print(f"Current Fitness: {fitness}")
+    print(f"Total SNN Fires: {total_fires}")
+    
+    return fitness, total_fires, best_gen
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument('--file',
-                        type=str,
-                        default=None,
-                        help='csv file to run')
+    parser = argparse.ArgumentParser(description='Run the best individual from a CSV file')
+    
+    parser.add_argument(
+        '--filename',
+        type=str,
+        help='CSV file to analyze (must be in data directory)',
+        required=True)
     
     args = parser.parse_args()
-
-    if args.file == None:
-        raise Exception('No csv file specified!')
-
-    visualize_best(args.file)
+    
+    run_best(args.filename)

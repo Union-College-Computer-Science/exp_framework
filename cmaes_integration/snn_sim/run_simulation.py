@@ -77,7 +77,7 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
         vid_name (string): If mode is "v" or "b", this is the name of the saved video.
         vid_path (string): If mode is "v" or "b", this is the path the video will be saved.
     Returns:
-        float: The fitness of the genome.
+        tuple: (fitness, total_fires) - The fitness of the genome and total number of SNN fires
     """
 
     # Create world
@@ -148,8 +148,17 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
     final_raw_pm_pos = sim.object_pos_at_time(sim.get_time(), "robot")
 
     fitness = np.mean(init_raw_pm_pos, 1)[0] - np.mean(final_raw_pm_pos, 1)[0]
+    
+    # Print SNN firing statistics
+    print(f"\n=== Simulation Complete ===")
+    print(f"Iterations: {iters}")
+    print(f"Fitness: {FITNESS_OFFSET - fitness}")
+    snn_controller.print_fire_statistics()
+    
+    # Get total number of fires
+    total_fires = snn_controller.get_total_fires()
 
     if mode in ["v", "b"]:
         create_video(video_frames, vid_name, vid_path, FPS)
 
-    return FITNESS_OFFSET - fitness # Turn into a minimization problem
+    return (FITNESS_OFFSET - fitness, total_fires) # Return both fitness and fire count
