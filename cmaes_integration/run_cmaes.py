@@ -34,6 +34,27 @@ FITNESS_INDEX = 1
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATE_TIME = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
 
+def objective(x):
+    """
+    Used to evaluate the fitness of a genome.
+
+    Parameters:
+        x (ndarray): Genome.
+
+    Returns:
+        float: Fitness score to minimize.
+    """
+    if VERBOSE:
+        print("Evaluating genome:", x)
+    try:
+        fitness, total_fires = run(NUM_ITERS, x, "h")
+        if VERBOSE:
+            print(f"Fitness: {fitness}, Total SNN Fires: {total_fires}")
+        return fitness
+    except Exception as e:
+        print("Error running simulation:", e)
+        return float('inf')  # Return a high value to indicate failure
+
 def run_cma_es(mode, gens, sigma_val):
     """
     Runs the cma_es algorithm on the robot locomotion problem,
@@ -72,7 +93,7 @@ def run_cma_es(mode, gens, sigma_val):
 
         for indv_num in range(optimizer.population_size):
             x = optimizer.ask()
-            fitness = run(NUM_ITERS, x, "h")
+            fitness = objective(x)
             solutions.append((x, fitness))
 
         best_fitness = solutions[0][FITNESS_INDEX]

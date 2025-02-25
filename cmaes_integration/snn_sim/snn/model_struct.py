@@ -62,6 +62,10 @@ class SpikyNode:
             return 0.0
         return sum(self.firelog) / len(self.firelog)
 
+    def get_fire_count(self):
+        """Returns the total number of times this neuron has fired."""
+        return sum(self.firelog)
+
     def set_weight(self, idx, val):
         """Sets a weight for a particular node."""
         if 0 <= idx < len(self._weights):
@@ -120,6 +124,14 @@ class SpikyLayer:
         """Returns the duty cycles for the neurons in the layer."""
         return [node.duty_cycle() for node in self.nodes]
 
+    def get_fire_counts(self):
+        """Returns the fire counts for all neurons in the layer."""
+        return [node.get_fire_count() for node in self.nodes]
+
+    def get_total_fires(self):
+        """Returns the total number of firings across all neurons in the layer."""
+        return sum(node.get_fire_count() for node in self.nodes)
+
 
 class SpikyNet:
     """
@@ -151,6 +163,19 @@ class SpikyNet:
             print(f"Node {node_index}: ", end="")
             output_node.print_weights()
         print("\n")
+
+    def get_fire_counts(self):
+        """Returns fire counts for all layers."""
+        return {
+            "hidden_layer": self.hidden_layer.get_fire_counts(),
+            "output_layer": self.output_layer.get_fire_counts()
+        }
+
+    def get_total_fires(self):
+        """Returns the total number of firings across all nodes in the network."""
+        hidden_fires = self.hidden_layer.get_total_fires()
+        output_fires = self.output_layer.get_total_fires()
+        return hidden_fires + output_fires
 
 
 # testing

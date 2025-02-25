@@ -136,6 +136,50 @@ class SNNController:
             lengths.append(item['target_length'])
         return lengths
 
+    def get_fire_counts(self):
+        """
+        Returns the fire counts for all SNNs.
+        
+        Returns:
+            dict: Dictionary with SNN IDs as keys and fire count dictionaries as values
+        """
+        fire_counts = {}
+        for snn_id, snn in enumerate(self.snns):
+            fire_counts[snn_id] = snn.get_fire_counts()
+        return fire_counts
+
+    def get_total_fires(self):
+        """
+        Returns the total number of fires across all SNNs.
+        
+        Returns:
+            int: Total number of times any neuron in any SNN fired
+        """
+        return sum(snn.get_total_fires() for snn in self.snns)
+
+    def print_fire_statistics(self):
+        """
+        Prints statistics about neuron firings for all SNNs.
+        """
+        total_fires = self.get_total_fires()
+        fire_counts = self.get_fire_counts()
+        
+        print(f"\n--- SNN Fire Statistics ---")
+        print(f"Total fires across all SNNs: {total_fires}")
+        print(f"Fires per SNN:")
+        
+        for snn_id, counts in fire_counts.items():
+            hidden_fires = sum(counts["hidden_layer"])
+            output_fires = sum(counts["output_layer"])
+            total_snn_fires = hidden_fires + output_fires
+            
+            print(f"  SNN {snn_id}:")
+            print(f"    Total fires: {total_snn_fires}")
+            print(f"    Hidden layer fires: {hidden_fires} {counts['hidden_layer']}")
+            print(f"    Output layer fires: {output_fires} {counts['output_layer']}")
+        
+        print("---------------------------\n")
+
     def get_input_size(self):
         return self.inp_size
 
