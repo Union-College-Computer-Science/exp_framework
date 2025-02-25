@@ -46,11 +46,16 @@ Feb 17th | Luodi Wang
 - Run inputs through the SNN
 - and we've now finally outputted actuator control values
 
-
 Feb 17th | Abhay Kashyap
 - Merged all utility functions for SNN (eg. cmaes output => snn w&b; getting snn outputs, etc.) into one class
 - Updated SNN code to fix some duty cycle and firelog errors (duty cycle was always 0 as firelog was not getting updated because of threshold)
 
+Feb 21st | Luodi Wang
+- Implement get_inputs()
+
 Feb 23rd | Abhay Kashyap
 - Removed files that were not being used and renames some files to more appropriate names
 - Refactored `SNNRunner()` into `SNNController()` and the class simpler to use for simulation - removed redundant functions and converted some functions into private functions for abstraction.
+
+Feb 25th | Luodi Wang, Miguel Garduno, Atharv Tekurkar 
+analyze_fires ed. 1.0
