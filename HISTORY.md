@@ -66,3 +66,7 @@ Feb 25th | By James Gaskell & Matthew Meek
 
 Feb 27th | Thomas Breimer
 - cmaes bug fixes
+
+March 3rd | Luodi Wang
+- analyze SNN fires
+
