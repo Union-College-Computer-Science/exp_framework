@@ -112,11 +112,25 @@ class SNNController:
         Returns:
             dict: Contains 'continuous_actions' and 'duty_cycles'
         """
-        # inputs = morpho.get_inputs()
+
+        # Normalizing inputs between -1 and 1
+        x_vals, y_vals = zip(*inputs)  # Unzips into two lists
+
+        # Find min and max for each component
+        x_min, x_max = min(x_vals), max(x_vals)
+        y_min, y_max = min(y_vals), max(y_vals)
+
+        # Normalize each component independently
+        inputs = [
+            (
+                2 * (x - x_min) / (x_max - x_min) - 1,  # Normalize x
+                2 * (y - y_min) / (y_max - y_min) - 1   # Normalize y
+            ) for x, y in inputs
+        ]
+
         outputs = {}
         for snn_id, snn in enumerate(self.snns):
-            snn.compute(inputs[snn_id])
-            duty_cycle = snn.output_layer.duty_cycles()
+            duty_cycle = snn.compute(inputs[snn_id])
             scale_factor = MAX_LENGTH - MIN_LENGTH
             scaled_actions = [(dc * scale_factor) + MIN_LENGTH
                               for dc in duty_cycle]
@@ -124,6 +138,7 @@ class SNNController:
                 "target_length": scaled_actions,
                 "duty_cycle": duty_cycle
             }
+
         return outputs
 
     def get_lengths(self, inputs):
@@ -135,9 +150,6 @@ class SNNController:
         for _, item in out.items():
             lengths.append(item['target_length'])
         return lengths
-
-    def get_input_size(self):
-        return self.inp_size
 
 
 def calc_param_num(inp_size, hidden_size, out_size):

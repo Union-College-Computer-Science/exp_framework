@@ -9,8 +9,8 @@ import numpy as np
 from rsnn_sim.snn.model_struct import SpikyNet
 
 # Constants for SNN configuration
-MIN_LENGTH = 0.6  # Minimum actuator length
-MAX_LENGTH = 1.6  # Maximum actuator length
+MIN_LENGTH = 0.2  # Minimum actuator length
+MAX_LENGTH = 3  # Maximum actuator length
 _current_file = os.path.abspath(__file__)
 _project_root = os.path.dirname(os.path.dirname(_current_file))
 ROBOT_DATA_PATH = os.path.join(_project_root, "morpho_demo", "world_data",

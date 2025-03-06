@@ -44,8 +44,7 @@ def retrieve_actuator_count(robot_filename):
     Returns:
         An int: the number of actuators in the robot.
     '''
-    jsonpath = os.path.join('world_data', robot_filename)
-    jsonf = open(jsonpath)
+    jsonf = open(os.path.join(os.path.dirname(__file__) + "/world_data", robot_filename))
     data = json.load(jsonf)
     actuator_count = 0
     key_for_robot = list(data["objects"].keys())[0] # No, I'm not happy about it, either.
@@ -85,7 +84,7 @@ def run_rmhc(gens, iters, robot_filename, exper_dir, show=True):
         (ndarray, fitness): The fittest genome the RMHC finds and its fitness.
     """
 
-    os.mkdir(exper_dir)  #generate special directory for results.
+    os.mkdir(os.path.join(os.path.dirname(__file__),exper_dir))   #generate special directory for results.
 
     corners = find_corners(robot_filename)
     print("Muh corners: " + str(corners))
@@ -154,10 +153,10 @@ def run_simulation(iters,
     """
 
     # Create world
-    world = EvoWorld.from_json(os.path.join('world_data', ENV_FILENAME))
+    world = EvoWorld.from_json(os.path.join(os.path.dirname(__file__) + '/world_data', ENV_FILENAME))
 
     # Add robot
-    robot = WorldObject.from_json(os.path.join('world_data',robot_filename))
+    robot = WorldObject.from_json(os.path.join(os.path.dirname(__file__) + "/world_data", robot_filename))
 
     world.add_from_array(name='robot',
                          structure=robot.get_structure(),
@@ -362,8 +361,11 @@ def find_corners(robot_filename):
     # Stupid little hack but it works like magic.
     # We create a 0-time "simulation" to get coords for point masses.
     # Using those, we can figure out the indicies for the corners.
-    world = EvoWorld.from_json(os.path.join('world_data', ENV_FILENAME))
-    robot = WorldObject.from_json(os.path.join('world_data',robot_filename))
+    # Create world
+    world = EvoWorld.from_json(os.path.join(os.path.dirname(__file__) + '/world_data', ENV_FILENAME))
+
+    # Add robot
+    robot = WorldObject.from_json(os.path.join(os.path.dirname(__file__) + "/world_data", robot_filename))
     world.add_from_array(name='robot',
                          structure=robot.get_structure(),
                          x=ROBOT_SPAWN_X,
@@ -444,7 +446,7 @@ if __name__ == "__main__":
 
     #args
     parser = argparse.ArgumentParser(description="Arguments for simple experiment.")
-    parser.add_argument("robot_filename", type=str,
+    parser.add_argument("--robot_filename", default="bestbot.json", type=str,
                         help="The json file of the robot you want to run the experiment with.")
     parser.add_argument("--iters", default=100, type=int,
                         help="number of iterations per generation.")

@@ -193,7 +193,7 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
 
     fitness = np.mean(final_raw_pm_pos, 1)[0] - np.mean(init_raw_pm_pos, 1)[0]
     
-    if np.mean(init_raw_pm_pos, 1)[1] - np.mean(final_raw_pm_pos, 1)[1] < 0:
+    if np.mean(init_raw_pm_pos, 1)[1] - np.mean(final_raw_pm_pos, 1)[1] > 0:
         fitness = 0
 
     if mode in ["v", "b"]:

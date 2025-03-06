@@ -22,7 +22,8 @@ from cmaes import CMA
 import numpy as np
 from rsnn_sim import run_sim_rsnn
 
-SNN_INPUT_SHAPE = 800
+SNN_INPUT_SHAPE = 800 # Currently hard coded - need to work out how to calculate this
+CORNER_INPUTS = 4
 MEAN_ARRAY = [1.0] * SNN_INPUT_SHAPE
 NUM_ITERS = 500
 
@@ -68,7 +69,7 @@ def run_cma_es(mode, gens, sigma_val):
     
 
     # Init CMA
-    optimizer = CMA(mean=np.array(MEAN_ARRAY), sigma=sigma_val, population_size=50)
+    optimizer = CMA(mean=np.array(MEAN_ARRAY), sigma=sigma_val, population_size=100)
 
     best_fitness_so_far = run_sim_rsnn.FITNESS_OFFSET
 
@@ -91,8 +92,6 @@ def run_cma_es(mode, gens, sigma_val):
         if best_fitness < best_fitness_so_far:
             print("Found new best! Old:", best_fitness_so_far, "New:", best_fitness)
             best_fitness_so_far = best_fitness
-            sigma_val *= 0.98 # Sigma decay
-            print("sigma now: " + str(sigma_val))
 
         if VERBOSE:
             print([i[1] for i in sorted_solutions])
