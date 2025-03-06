@@ -6,11 +6,13 @@ import json
 import os
 import numpy as np
 from model_struct import SpikyNet
+from ring_buffer import RingBuffer
 
 
 # Constants for SNN configuration
 MIN_LENGTH = 0.6  # Minimum actuator length
 MAX_LENGTH = 1.6  # Maximum actuator length
+BUFFER_SIZE = 50  # Size of ring buffers for storing history
 _current_file = os.path.abspath(__file__)
 _project_root = os.path.dirname(os.path.dirname(_current_file))
 ROBOT_DATA_PATH = os.path.join(_project_root, "morpho_demo", "world_data", "bestbot.json")
@@ -25,6 +27,11 @@ class SNNController:
         self.inp_size = inp_size
         self.hidden_size = hidden_size
         self.output_size = output_size
+        
+        # Initialize ring buffers for storing history
+        self.input_buffer = RingBuffer(BUFFER_SIZE)
+        self.output_buffer = RingBuffer(BUFFER_SIZE)
+        
         self._load_robot_config(robot_config)
 
     def _load_robot_config(self, robot_path):
@@ -119,14 +126,25 @@ class SNNController:
         return outputs
 
     def get_lengths(self, inputs):
-        """
-        Returns a list of target lengths (action array)
-        """
-        out = self._get_output_state(inputs)
-        lengths = []
-        for _, item in out.items():
-            lengths.append(item['target_length'])
-        return lengths
+        """Get actuator lengths from SNN outputs."""
+        # Store inputs in ring buffer (convert to numpy array)
+        self.input_buffer.add(np.array(inputs))
+        
+        # Get SNN outputs
+        outputs = self._get_output_state(inputs)
+        
+        # Extract target lengths from outputs and store in ring buffer
+        target_lengths = np.array([outputs[i]["target_length"][0] for i in range(self.num_snn)])
+        self.output_buffer.add(target_lengths)
+        
+        return target_lengths
+
+    def get_history(self):
+        """Get the recent history of inputs and outputs."""
+        return {
+            'inputs': self.input_buffer.get(),
+            'outputs': self.output_buffer.get()
+        }
 
 
 def calc_param_num(inp_size, hidden_size, out_size):
@@ -161,6 +179,11 @@ def main():
         # print("\nSaved outputs to snn_outputs.json")
     except (FileNotFoundError, ValueError, KeyError) as e:
         print(f"Error: {str(e)}")
+
+    # Example: Calculate rate of change
+    history = runner.get_history()
+    recent_inputs = history['inputs']  # Shape: (buffer_size, num_snn, input_size)
+    recent_outputs = history['outputs']  # Shape: (buffer_size, num_snn)
 
 if __name__ == '__main__':
     main()
