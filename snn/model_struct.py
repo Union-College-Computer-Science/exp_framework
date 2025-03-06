@@ -3,12 +3,13 @@ Module for simulating spiking neural networks (SNNs) with spiky neurons.
 """
 
 import random
-
+import numpy as np
+from snn.ring_buffer import RingBuffer
 
 # Constants
 SPIKE_DECAY = 0.1
 MAX_BIAS = 1
-MAX_FIRELOG_SIZE = 200
+MAX_FIRELOG_SIZE = 50
 
 
 class SpikyNode:
@@ -19,46 +20,42 @@ class SpikyNode:
     def __init__(self, size):
         self._weights = []  # a list of weights and a bias (last item in the list)
         self.level = 0.0  # activation level
-        self.firelog = []  # tracks whether the neuron fired (1) or not (0)
-        self.init(size)
-
-    def init(self, size):
-        """Initialize weights and bias."""
-        self.firelog.clear()
+        self.firelog = RingBuffer(MAX_FIRELOG_SIZE)  # tracks whether the neuron fired (1) or not (0)
         if size > 0:
             self._weights = [random.uniform(-1, 1) for _ in range(size)]
             self._weights.append(random.uniform(0, MAX_BIAS))
+        
 
     def compute(self, inputs):
         """Compute the neuron's output based on inputs."""
-        while len(self.firelog) > MAX_FIRELOG_SIZE:
-            self.firelog.pop(0)
 
         # print(f"current level: {self.level}, bias: {self.get_bias()}")
         self.level = max(self.level - SPIKE_DECAY, 0.0)
 
         if (len(inputs) + 1) != len(self._weights):
-            print(f"Error: {len(inputs)} inputs vs {len(self._weights)} weights")
+            print(
+                f"Error: {len(inputs)} inputs vs {len(self._weights)} weights")
             return 0.0
 
         weighted_sum = sum(inputs[i] * self._weights[i] for i in range(len(inputs)))
         self.level = max(self.level + weighted_sum, 0.0)
         # print(f"new level: {self.level}")
-
+        
         if self.level >= self.get_bias():
             # print("Fired --> activation level reset to 0.0\n")
             self.level = 0.0
-            self.firelog.append(1)
+            self.firelog.add(1)
             return 1.0
         # print("\n")
-        self.firelog.append(0)
+        self.firelog.add(0)
         return 0.0
 
     def duty_cycle(self):
         """Measures how frequently the neuron fires."""
-        if len(self.firelog) == 0:
+        if len(self.firelog.get()) == 0:
             return 0.0
-        return sum(self.firelog) / len(self.firelog)
+    
+        return np.mean(self.firelog.get())
 
     def set_weight(self, idx, val):
         """Sets a weight for a particular node."""
@@ -91,6 +88,7 @@ class SpikyNode:
         """Get the weights of the neuron."""
         return self._weights
 
+
 class SpikyLayer:
     """
     Collection of multiple neurons (SpikyNodes).
@@ -116,6 +114,7 @@ class SpikyLayer:
     def duty_cycles(self):
         """Returns the duty cycles for the neurons in the layer."""
         return [node.duty_cycle() for node in self.nodes]
+
 
 class SpikyNet:
     """
@@ -147,6 +146,7 @@ class SpikyNet:
             print(f"Node {node_index}: ", end="")
             output_node.print_weights()
         print("\n")
+
 
 # testing
 if __name__ == '__main__':
@@ -195,11 +195,8 @@ if __name__ == '__main__':
     print("SpikyNet output:", TEST_NET_OUTPUT)
     print("\nSetting weights manually")
     TEST_NET_WEIGHTS = [
-        0.1, 0.2, 0.3, 0.4, 1.0,
-        0.5, 0.6, 0.7, 0.8, 0.9,
-        1.0, 1.0, 0.7,
-        0.0, 0.0, 0.5,
-        0.5, 0.5, 0.8
+        0.1, 0.2, 0.3, 0.4, 1.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0, 0.7, 0.0,
+        0.0, 0.5, 0.5, 0.5, 0.8
     ]
     TEST_NET.set_weights(TEST_NET_WEIGHTS)
     print("Updated weights:")

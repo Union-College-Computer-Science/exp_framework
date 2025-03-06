@@ -5,7 +5,7 @@ Module for running SNN outputs with proper input/output handling.
 import json
 import os
 import numpy as np
-from model_struct import SpikyNet
+from snn.model_struct import SpikyNet
 
 
 # Constants for SNN configuration
