@@ -67,6 +67,9 @@ Feb 25th | By James Gaskell & Matthew Meek
 Feb 27th | Thomas Breimer
 - cmaes bug fixes
 
+Mar 3rd | Luodi Wang
+- analyzed SNN fires and diagnosed what was wrong with the problem
+
 Mar 4th | Thomas Breimer
 - Added bestbot.json to snn-sim
 - Chnaged run_cmaes.py to use bestbot.json
@@ -78,3 +81,7 @@ Mar 5th | Abhay Kashyap
 
 March 6th | Thomas Breimer
 - added run_experiment.py
+
+Mar 6th | Luodi Wang and Miguel Garduno
+- used modular circular buffer file from Jonathan to integrate into SNN
+- debugged SNN controller and other files
