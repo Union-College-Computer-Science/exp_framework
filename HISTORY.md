@@ -1,7 +1,7 @@
 # History
 
 ### Framework Improvements
-February 10th, 2025 | By Thomas Breimer | PR approved by Thomas Breimer 
+February 10th, 2025 | By Thomas Breimer | PR approved by Thomas Breimer
 - Can save simulations as videos
 - Can decide to run in headless, video, window modes from terminal
 - Can run individuals
@@ -10,7 +10,7 @@ February 10th, 2025 | By Thomas Breimer | PR approved by Thomas Breimer
 
 Feb 11th | By Abhay Kashyap
 - Added script to transform CMA-ES output to SNN weights and biases
-- Script reshapes the flat array into an array of shape (NUM_SNN * PARAMS_PER_SNN) 
+- Script reshapes the flat array into an array of shape (NUM_SNN * PARAMS_PER_SNN)
 and then returns a list of dictionaries explicitly separating weights and biases of each SNN
 
 ### Introducing snn to evogym pipeline
@@ -40,7 +40,7 @@ Feb 16th | Abhay Kashyap
 - Made the `snn_parameters` dictionary elements compliant with the way SNN's `set_weights()` method works
 - Completed testing unpacking tests with dummy cmaes output and setting them to SNNs
 
-### Refactoring 
+### Refactoring
 Feb 17th | Luodi Wang
 - Successfully completed robot configuration with its locations of corners from bestbot.json
 - Run inputs through the SNN
@@ -85,3 +85,9 @@ Mar 5th | James Gaskell
 
 March 6th | Thomas Breimer
 - added run_experiment.py
+
+### Ozempic
+March 6th | Matthew Meek
+- There's a lot of stuff in this repo and not all of it is important.
+- Deleted voxel_length_test, rmhc_sim, morpho_demo, and cmaes_demo folders; these folders are from earlier in development and no longer contain "current" code needed to run simulations.
+- From cmaes_integration, removed rsnn_sim folder, sin_sim folder, "version 2" files.
