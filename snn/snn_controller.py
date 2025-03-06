@@ -57,13 +57,6 @@ class SNNController:
         """
         Retrieve the flat CMA-ES output and 
         reshape it into a structured format for the SNN's `set_weights()`.
-
-        Returns:
-            snn_parameters: A dictionary containing the weights and biases for each SNN.
-                        - dict with two elements : 'hidden_layer' and 'output_layer'
-                            'hidden_layer' - weights and biases for all nodes in the hidden layer
-                            'output_layer' - weights and biases for all nodes in the output layer
-                        
                             
         Raises:
             ValueError: If the length of the CMA-ES output does not match the expected size.
@@ -82,18 +75,10 @@ class SNNController:
         # Reshape the flat vector to a 2D array: each row corresponds to one SNN.
         reshaped = flat_vector.reshape((self.num_snn, params_per_snn))
 
-        # For each SNN, split the parameters into weights and biases.
-        snn_parameters = {}
-        for snn_idx, params_per_snn in enumerate(reshaped):
-            hidden_params = params_per_snn[:params_per_hidden_layer]
-            output_params = params_per_snn[params_per_hidden_layer:]
-            snn_parameters[snn_idx] = {
-                'hidden_layer': hidden_params,
-                'output_layer': output_params
-            }
-
-        for snn_id, params in snn_parameters.items():
-            self.snns[snn_id].set_weights(params)
+        # each snn captured by their snn_idx would just set the weights by their params
+        # snn will figure out itself how to divide the weights to its layers
+        for snn_idx, params in enumerate(reshaped):
+            self.snns[snn_idx].set_weights(params.tolist())
 
     def _get_output_state(self, inputs):
         """

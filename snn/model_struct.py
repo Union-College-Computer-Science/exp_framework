@@ -3,12 +3,14 @@ Module for simulating spiking neural networks (SNNs) with spiky neurons.
 """
 
 import random
+from ring_buffer import RingBuffer
 
 
 # Constants
 SPIKE_DECAY = 0.1
 MAX_BIAS = 1
 MAX_FIRELOG_SIZE = 200
+INCLUDING_BIAS = 1
 
 
 class SpikyNode:
@@ -19,22 +21,18 @@ class SpikyNode:
     def __init__(self, size):
         self._weights = []  # a list of weights and a bias (last item in the list)
         self.level = 0.0  # activation level
-        self.firelog = []  # tracks whether the neuron fired (1) or not (0)
+        self.firelog = RingBuffer(MAX_FIRELOG_SIZE)  # tracks whether the neuron fired (1) or not (0)
         self.init(size)
 
     def init(self, size):
         """Initialize weights and bias."""
-        self.firelog.clear()
+        self.firelog = RingBuffer(MAX_FIRELOG_SIZE)
         if size > 0:
             self._weights = [random.uniform(-1, 1) for _ in range(size)]
             self._weights.append(random.uniform(0, MAX_BIAS))
 
     def compute(self, inputs):
         """Compute the neuron's output based on inputs."""
-        while len(self.firelog) > MAX_FIRELOG_SIZE:
-            self.firelog.pop(0)
-
-        # print(f"current level: {self.level}, bias: {self.get_bias()}")
         self.level = max(self.level - SPIKE_DECAY, 0.0)
 
         if (len(inputs) + 1) != len(self._weights):
@@ -43,22 +41,20 @@ class SpikyNode:
 
         weighted_sum = sum(inputs[i] * self._weights[i] for i in range(len(inputs)))
         self.level = max(self.level + weighted_sum, 0.0)
-        # print(f"new level: {self.level}")
 
         if self.level >= self.get_bias():
-            # print("Fired --> activation level reset to 0.0\n")
             self.level = 0.0
-            self.firelog.append(1)
+            self.firelog.add(1)
             return 1.0
-        # print("\n")
-        self.firelog.append(0)
+        self.firelog.add(0)
         return 0.0
 
     def duty_cycle(self):
         """Measures how frequently the neuron fires."""
-        if len(self.firelog) == 0:
+        if self.firelog.count == 0:
             return 0.0
-        return sum(self.firelog) / len(self.firelog)
+        recent_fires = self.firelog.get()
+        return sum(recent_fires) / len(recent_fires)
 
     def set_weight(self, idx, val):
         """Sets a weight for a particular node."""
@@ -125,6 +121,14 @@ class SpikyNet:
     def __init__(self, input_size, hidden_size, output_size):
         self.hidden_layer = SpikyLayer(hidden_size, input_size)
         self.output_layer = SpikyLayer(output_size, hidden_size)
+        # determine the weight sizes for each layer
+        self.hidden_layer_weights_size = hidden_size * (input_size + INCLUDING_BIAS)
+        self.output_layer_weights_size = output_size * (hidden_size + INCLUDING_BIAS)
+
+    def get_hidden_weights_size(self):
+        """getter for the weight size for the hidden layer"""
+        return self.hidden_layer_weights_size
+
 
     def compute(self, inputs):
         """Passes the input through the hidden layer."""
@@ -133,8 +137,10 @@ class SpikyNet:
 
     def set_weights(self, input_weights):
         """Assigns weights to the hidden and the output layer."""
-        self.hidden_layer.set_weights(input_weights['hidden_layer'])
-        self.output_layer.set_weights(input_weights['output_layer'])
+        hidden_layer_weights = input_weights[:self.get_hidden_weights_size()]
+        output_layer_weights = input_weights[self.get_hidden_weights_size():]
+        self.hidden_layer.set_weights(hidden_layer_weights)
+        self.output_layer.set_weights(output_layer_weights)
 
     def print_structure(self):
         """Displays the network weights."""
@@ -161,9 +167,22 @@ if __name__ == '__main__':
     print("Updated weights:")
     TEST_NODE.print_weights()
 
+    print("\nTesting firelog with multiple computations")
+    print("Initial firelog state:", TEST_NODE.firelog.get())
+    print("Initial duty cycle:", TEST_NODE.duty_cycle())
+    
+    # Run multiple computations to see firelog updates
+    test_inputs = [1, 2, 3, 4, 5]
+    print("\nRunning 10 computations with same input:")
+    for i in range(10):
+        output = TEST_NODE.compute(test_inputs)
+        print(f"Step {i+1}: Output={output}, Firelog={TEST_NODE.firelog.get()}, Duty cycle={TEST_NODE.duty_cycle():.3f}")
+
     print("\nGetting '1' output for manual input")
     TEST_OUTPUT = TEST_NODE.compute([1, 2, 3, 4, 5])
     print("Output:", TEST_OUTPUT)
+    print("Firelog after firing:", TEST_NODE.firelog.get())
+    print("Duty cycle after firing:", TEST_NODE.duty_cycle())
 
     print("\nGetting '0' output for manual input")
     TEST_NODE_WEIGHTS = [0.7, -0.4, -0.9, 0.0, -0.2, 0.8]
@@ -172,12 +191,20 @@ if __name__ == '__main__':
     TEST_NODE.print_weights()
     TEST_OUTPUT = TEST_NODE.compute([1, 2, 3, 4, 5])
     print("Output:", TEST_OUTPUT)
+    print("Firelog after non-firing:", TEST_NODE.firelog.get())
+    print("Duty cycle after non-firing:", TEST_NODE.duty_cycle())
 
     print("\n--- Testing SpikyLayer ---")
     TEST_LAYER = SpikyLayer(3, 4)
     TEST_INPUTS = [1, 2, 3, 4]
     LAYER_OUTPUTS = TEST_LAYER.compute(TEST_INPUTS)
     print("SpikyLayer outputs:", LAYER_OUTPUTS)
+    
+    # Test firelogs for each node in the layer
+    print("\nFirelogs for each node in layer:")
+    for i, node in enumerate(TEST_LAYER.nodes):
+        print(f"Node {i} firelog:", node.firelog.get())
+        print(f"Node {i} duty cycle:", node.duty_cycle())
 
     print("\nSetting weights manually")
     TEST_LAYER_WEIGHTS = [0.1 * idx for idx in range(15)]
@@ -193,6 +220,18 @@ if __name__ == '__main__':
     print("\nTesting computing")
     TEST_NET_OUTPUT = TEST_NET.compute([1, 2, 3, 4])
     print("SpikyNet output:", TEST_NET_OUTPUT)
+    
+    # Test firelogs for each layer in the network
+    print("\nFirelogs for hidden layer nodes:")
+    for i, node in enumerate(TEST_NET.hidden_layer.nodes):
+        print(f"Hidden Node {i} firelog:", node.firelog.get())
+        print(f"Hidden Node {i} duty cycle:", node.duty_cycle())
+    
+    print("\nFirelogs for output layer nodes:")
+    for i, node in enumerate(TEST_NET.output_layer.nodes):
+        print(f"Output Node {i} firelog:", node.firelog.get())
+        print(f"Output Node {i} duty cycle:", node.duty_cycle())
+
     print("\nSetting weights manually")
     TEST_NET_WEIGHTS = [
         0.1, 0.2, 0.3, 0.4, 1.0,
