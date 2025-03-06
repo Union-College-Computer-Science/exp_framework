@@ -66,3 +66,10 @@ Feb 25th | By James Gaskell & Matthew Meek
 
 Feb 27th | Thomas Breimer
 - cmaes bug fixes
+
+
+### Adding Ring Buffer
+March 05th | By Atharv Tekurkar
+- Added ring buffer
+- Implemented it for firelog in the snn structure
+- Removed duplicate snn files that were in cmaes_integration
