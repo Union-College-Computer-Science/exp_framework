@@ -9,7 +9,7 @@ import os
 import time
 import argparse
 import pandas
-from snn_sim.run_simulation import run
+from rsnn_sim.run_sim_rsnn import run
 
 ITERS = 500
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
