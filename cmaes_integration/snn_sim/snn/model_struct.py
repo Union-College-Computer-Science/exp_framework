@@ -2,7 +2,7 @@
 Module for simulating spiking neural networks (SNNs) with spiky neurons.
 """
 
-import random
+import numpy as np
 
 # Constants
 SPIKE_DECAY = 0.1
@@ -16,30 +16,21 @@ class SpikyNode:
     """
 
     def __init__(self, size):
-        self._weights = [
-        ]  # a list of weights and a bias (last item in the list)
+        self._weights = []  # a list of weights and a bias (last item in the list)
         self.level = 0.0  # activation level
         self.firelog = []  # tracks whether the neuron fired (1) or not (0)
-        self.init(size)
-
-    def init(self, size):
-        """Initialize weights and bias."""
-        self.firelog.clear()
-        if size > 0:
-            self._weights = [random.uniform(-1, 1) for _ in range(size)]
-            self._weights.append(random.uniform(0, MAX_BIAS))
+        
 
     def compute(self, inputs):
         """Compute the neuron's output based on inputs."""
-        while len(self.firelog) > MAX_FIRELOG_SIZE:
+        while len(self.firelog) >= MAX_FIRELOG_SIZE:
             self.firelog.pop(0)
 
         # print(f"current level: {self.level}, bias: {self.get_bias()}")
-        self.level = max(self.level - SPIKE_DECAY, 0.0)
+        self.level *= (1 - SPIKE_DECAY)
 
         if (len(inputs) + 1) != len(self._weights):
-            print(
-                f"Error: {len(inputs)} inputs vs {len(self._weights)} weights")
+            print(f"Error: {len(inputs)} inputs vs {len(self._weights)} weights; weights: {self._weights}")
             return 0.0
 
         weighted_sum = sum(inputs[i] * self._weights[i]
@@ -49,6 +40,10 @@ class SpikyNode:
 
         if self.level >= self.get_bias():
             # print("Fired --> activation level reset to 0.0\n")
+            if len(self.firelog) > 10 and sum(self.firelog[-10:]) > 7:
+                self._weights[-1] *= 1.05
+            if len(self.firelog) > 10 and sum(self.firelog[-10:]) < 3:
+                self._weights[-1] *= 0.95
             self.level = 0.0
             self.firelog.append(1)
             return 1.0
@@ -56,11 +51,12 @@ class SpikyNode:
         self.firelog.append(0)
         return 0.0
 
-    def duty_cycle(self):
+    def duty_cycle(self, window=100):
         """Measures how frequently the neuron fires."""
         if len(self.firelog) == 0:
             return 0.0
-        return sum(self.firelog) / len(self.firelog)
+        recent_fires = self.firelog[-window:]
+        return round(sum(recent_fires) / len(recent_fires), 2)
 
     def set_weight(self, idx, val):
         """Sets a weight for a particular node."""
@@ -71,10 +67,11 @@ class SpikyNode:
 
     def set_weights(self, input_weights):
         """Allows to set the neuron's weights."""
-        if len(input_weights) != len(self._weights):
+        if self._weights and len(input_weights) != len(self._weights):
             print("Weight size mismatch in node")
         else:
             self._weights = input_weights.copy()
+            # self._weights[:-1] /= np.linalg.norm(self._weights[:-1])
 
     def set_bias(self, val):
         """Sets the neuron's bias."""
@@ -116,9 +113,9 @@ class SpikyLayer:
             end = start + weights_per_node
             node.set_weights(input_weights[start:end])
 
-    def duty_cycles(self):
+    def duty_cycles(self, window=100):
         """Returns the duty cycles for the neurons in the layer."""
-        return [node.duty_cycle() for node in self.nodes]
+        return [node.duty_cycle(window) for node in self.nodes]
 
 
 class SpikyNet:
@@ -130,10 +127,11 @@ class SpikyNet:
         self.hidden_layer = SpikyLayer(hidden_size, input_size)
         self.output_layer = SpikyLayer(output_size, hidden_size)
 
-    def compute(self, inputs):
+    def compute(self, inputs, firelog_window=100):
         """Passes the input through the hidden layer."""
         hidden_output = self.hidden_layer.compute(inputs)
-        return self.output_layer.compute(hidden_output)
+        self.output_layer.compute(hidden_output)
+        return self.output_layer.duty_cycles(firelog_window)
 
     def set_weights(self, input_weights):
         """Assigns weights to the hidden and the output layer."""

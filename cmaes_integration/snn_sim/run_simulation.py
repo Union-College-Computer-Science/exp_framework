@@ -14,13 +14,14 @@ from evogym import EvoWorld, EvoSim, EvoViewer
 from evogym import WorldObject
 from snn_sim.robot.morphology import Morphology
 from snn_sim.snn.snn_controller import SNNController
+import itertools
 
 # Simulation constants
 ROBOT_SPAWN_X = 3
 ROBOT_SPAWN_Y = 1
 ACTUATOR_MIN_LEN = 0.6
 ACTUATOR_MAX_LEN = 1.6
-NUM_ITERS = 200
+NUM_ITERS = 1000
 FPS = 50
 MODE = "v" # "headless", "screen", or "video"
 
@@ -114,6 +115,8 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
     snn_controller = SNNController(2, 2, 1, robot_config=robot_file_path)
     snn_controller.set_snn_weights(genome)
 
+    log = []
+
     for _ in range(iters):
         # Get point mass locations
         raw_pm_pos = sim.object_pos_at_time(sim.get_time(), "robot")
@@ -126,6 +129,7 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
 
         # Clip actuator target lengths to be between 0.6 and 1.6 to prevent buggy behavior
         action = np.clip(action, ACTUATOR_MIN_LEN, ACTUATOR_MAX_LEN)
+        log.append(action)
 
         # Set robot action to the action vector. Each actuator corresponds to a vector
         # index and will try to expand/contract to that value
@@ -142,6 +146,10 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
             viewer.render(verbose=True, mode="screen")
             video_frames.append(viewer.render(verbose=False, mode="rgb_array"))
 
+    logg = []
+    for x in log:
+        logg.append(list(itertools.chain.from_iterable(x)))
+    
     viewer.close()
 
     # Get robot point mass position position afer sim has run
@@ -152,4 +160,4 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
     if mode in ["v", "b"]:
         create_video(video_frames, vid_name, vid_path, FPS)
 
-    return FITNESS_OFFSET - fitness # Turn into a minimization problem
+    return FITNESS_OFFSET - fitness, logg # Turn into a minimization problem

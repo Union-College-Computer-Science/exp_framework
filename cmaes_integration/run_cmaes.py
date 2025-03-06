@@ -21,10 +21,15 @@ from pathlib import Path
 from cmaes import CMA
 import numpy as np
 from snn_sim import run_simulation
+from collections import Counter
+import pandas as pd
+import matplotlib.pyplot as plt
+import itertools
+
 
 SNN_INPUT_SHAPE = 72
 MEAN_ARRAY = [0.0] * SNN_INPUT_SHAPE
-NUM_ITERS = 500
+NUM_ITERS = 1000
 
 VERBOSE = False
 
@@ -56,6 +61,7 @@ def run_cma_es(mode, gens, sigma_val):
     csv_header.extend([f"weight{i}" for i in range(SNN_INPUT_SHAPE)])
 
     Path(os.path.join(ROOT_DIR, "data")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(ROOT_DIR, "action_log", f"{DATE_TIME}")).mkdir(parents=True, exist_ok=True)
 
     csv_name = DATE_TIME + ".csv"
     csv_path = os.path.join(ROOT_DIR, "data", csv_name)
@@ -74,8 +80,17 @@ def run_cma_es(mode, gens, sigma_val):
 
         for indv_num in range(optimizer.population_size):
             x = optimizer.ask()
-            fitness = run_simulation.run(NUM_ITERS, x, "h")
+            fitness, log = run_simulation.run(NUM_ITERS, x, "h")
             solutions.append((x, fitness))
+        
+        log = np.array(log).T
+        log_csv = pd.DataFrame()
+        for i, x in enumerate(log):
+            z = dict(Counter(list(map(lambda y: round(y, 2), x))))
+            print(f"Firing freq SNN {i}: {z}")
+            temp = pd.DataFrame(z.values(), index=z.keys(), columns=[i])
+            log_csv = pd.concat([log_csv, temp], axis=1).sort_index()
+        log_csv.to_csv(os.path.join(ROOT_DIR, "action_log", f"{DATE_TIME}", f"gen_{generation}.csv"), index=True)
 
         optimizer.tell(solutions)
 

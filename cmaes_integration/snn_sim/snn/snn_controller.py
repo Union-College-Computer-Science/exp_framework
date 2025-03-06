@@ -74,7 +74,7 @@ class SNNController:
         Raises:
             ValueError: If the length of the CMA-ES output does not match the expected size.
         """
-
+        
         params_per_hidden_layer = (self.inp_size + 1) * self.hidden_size
         params_per_output_layer = (self.hidden_size + 1) * self.output_size
         params_per_snn = params_per_hidden_layer + params_per_output_layer
@@ -101,7 +101,7 @@ class SNNController:
 
         for snn_id, params in snn_parameters.items():
             self.snns[snn_id].set_weights(params)
-
+    
     def _get_output_state(self, inputs):
         """
         Run SNN with inter-actuator distances as input over multiple timesteps.
@@ -112,11 +112,25 @@ class SNNController:
         Returns:
             dict: Contains 'continuous_actions' and 'duty_cycles'
         """
-        # inputs = morpho.get_inputs()
+        
+        # Normalizing inputs between -1 and 1
+        x_vals, y_vals = zip(*inputs)  # Unzips into two lists
+    
+        # Find min and max for each component
+        x_min, x_max = min(x_vals), max(x_vals)
+        y_min, y_max = min(y_vals), max(y_vals)
+        
+        # Normalize each component independently
+        inputs = [
+            (
+                2 * (x - x_min) / (x_max - x_min) - 1,  # Normalize x
+                2 * (y - y_min) / (y_max - y_min) - 1   # Normalize y
+            ) for x, y in inputs
+        ]
+        
         outputs = {}
         for snn_id, snn in enumerate(self.snns):
-            snn.compute(inputs[snn_id])
-            duty_cycle = snn.output_layer.duty_cycles()
+            duty_cycle = snn.compute(inputs[snn_id])
             scale_factor = MAX_LENGTH - MIN_LENGTH
             scaled_actions = [(dc * scale_factor) + MIN_LENGTH
                               for dc in duty_cycle]
@@ -124,6 +138,7 @@ class SNNController:
                 "target_length": scaled_actions,
                 "duty_cycle": duty_cycle
             }
+
         return outputs
 
     def get_lengths(self, inputs):
