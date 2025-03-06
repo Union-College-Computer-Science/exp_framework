@@ -20,11 +20,10 @@ class SpikyNode:
     def __init__(self, size):
         self._weights = []  # a list of weights and a bias (last item in the list)
         self.level = 0.0  # activation level
-        self.firelog = RingBuffer(MAX_FIRELOG_SIZE)  # tracks whether the neuron fired (1) or not (0)
+        self.firelog = RingBuffer(MAX_FIRELOG_SIZE) # tracks whether neuron fired (1) or not (0)
         if size > 0:
             self._weights = [random.uniform(-1, 1) for _ in range(size)]
             self._weights.append(random.uniform(0, MAX_BIAS))
-        
 
     def compute(self, inputs):
         """Compute the neuron's output based on inputs."""
@@ -40,7 +39,7 @@ class SpikyNode:
         weighted_sum = sum(inputs[i] * self._weights[i] for i in range(len(inputs)))
         self.level = max(self.level + weighted_sum, 0.0)
         # print(f"new level: {self.level}")
-        
+
         if self.level >= self.get_bias():
             # print("Fired --> activation level reset to 0.0\n")
             self.level = 0.0
@@ -54,7 +53,6 @@ class SpikyNode:
         """Measures how frequently the neuron fires."""
         if len(self.firelog.get()) == 0:
             return 0.0
-    
         return np.mean(self.firelog.get())
 
     def set_weight(self, idx, val):
