@@ -82,3 +82,7 @@ Mar 5th | James Gaskell
 
 March 6th | Thomas Breimer
 - added run_experiment.py
+
+March 7th | James Gaskell
+- created plot_firing_data to catch the values of the action array when it is returned by the SNN for every time step in every generation
+- created run graph visualization for firing of neurons overe time and their output values
