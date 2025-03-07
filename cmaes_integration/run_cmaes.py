@@ -140,4 +140,5 @@ if __name__ == "__main__":
                         help='sigma value for cma-es')
     args = parser.parse_args()
 
-    run(args.mode, args.gens, args.sigma)
+    file = run_simulation.create_header()
+    run(args.mode, args.gens, args.sigma, file)

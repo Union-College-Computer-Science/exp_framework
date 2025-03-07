@@ -7,8 +7,10 @@ January 29th, 2025
 """
 
 import os
+import csv
 import itertools
 from pathlib import Path
+from datetime import datetime
 import cv2
 import numpy as np
 from evogym import EvoWorld, EvoSim, EvoViewer
@@ -26,11 +28,36 @@ FPS = 50
 MODE = "v" # "headless", "screen", or "video"
 
 FITNESS_OFFSET = 100
+NUM_ACTUATORS = 7
 
 # Files
 ENV_FILENAME = "big_platform.json"
 ROBOT_FILENAME = "bestbot.json"
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+DATE_TIME = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+
+def create_header():
+
+    csv_path = (os.path.join(os.path.dirname(THIS_DIR), "plot_firing/data", f"{DATE_TIME}.csv"))
+
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    csv_header = (["Actuator:" f"{i}" for i in range(NUM_ACTUATORS)])
+
+    with open(csv_path, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(csv_header) 
+
+    return(csv_path)
+
+
+def plot_firing_action(action, csv_path):
+    with open(csv_path, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        flat_action = [item[0] for item in action]
+        writer.writerow(flat_action)
+    
+
 
 def create_video(source, output_name, vid_path, fps=FPS):
     """
@@ -64,7 +91,7 @@ def group_list(flat_list: list, n: int) -> list:
     """
     return [list(flat_list[i:i+n]) for i in range(0, len(flat_list), n)]
 
-def run(iters, genome, mode, vid_name=None, vid_path=None):
+def run(iters, genome, mode, file, vid_name=None, vid_path=None):
     """
     Runs a single simulation of a given genome.
 
@@ -127,6 +154,8 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
 
         # Feed snn and get outputs
         action = snn_controller.get_lengths(corner_distances)
+        
+        plot_firing_action(action, file)
 
         # Clip actuator target lengths to be between 0.6 and 1.6 to prevent buggy behavior
         action = np.clip(action, ACTUATOR_MIN_LEN, ACTUATOR_MAX_LEN)
