@@ -9,7 +9,7 @@ import os
 import time
 import argparse
 import pandas
-from rsnn_sim.run_sim_rsnn import run
+from snn_sim.run_simulation import run
 
 ITERS = 500
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,7 +36,7 @@ def visualize_best(filename="latest.csv"):
                 best_fitness = min(df["best_fitness"])
                 row = df.loc[df['best_fitness'] == best_fitness]
                 genome = row.values.tolist()[0][3:]
-                run(ITERS, genome, "s")
+                run(ITERS, genome, "v")
         else:
             time.sleep(1)
 
