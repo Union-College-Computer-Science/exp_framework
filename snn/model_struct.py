@@ -69,8 +69,8 @@ class SpikyNode:
             print("Weight size mismatch in node")
         else:
             self._weights = input_weights.copy()
-            self._weights[:-1] = list(map(lambda x: abs(x), self._weights[:-1]))
-            # self._weights = input_weights.copy()
+            # self._weights[:-1] = list(map(lambda x: abs(x), self._weights[:-1]))
+            self._weights = input_weights.copy()
 
     def set_bias(self, val):
         """Sets the neuron's bias."""
