@@ -6,13 +6,17 @@ January 22nd, 2025
 """
 
 import os
+import cv2
 import random
+import argparse
 import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 from evogym import EvoWorld, EvoSim, EvoViewer
 from evogym import WorldObject
+from pathlib import Path
 
 ROBOT_SPAWN_X = 3
 ROBOT_SPAWN_Y = 10
@@ -25,15 +29,37 @@ MUTATE_RATE = 0.2
 
 ENV_FILENAME = "simple_environment_long.json"
 ROBOT_FILENAME = "walkbot4billion.json"
-GENS = 1500
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATE_TIME = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+VID_PATH = os.path.join(ROOT_DIR, "videos")
 
 EXPER_DIR = 'score_plots_2/' + ROBOT_FILENAME[:-5] + " " + time.asctime(
 )  #directory generated for a single run of the program. Stores outputs.
 # [:-5] clips the ".json" off all of the robot names. It is always -5 and it's only used right here.
 # Surely that doesn't justify wasting storage on a variable to "de-magic" it? Especially with this helpful explanation?
 
+def create_video(source, fps=50):
+    """
+    Saves a video from a list of frames
 
-def run_rmhc(gens, show=True):
+    Parameters:
+        source (list): List of cv2 frames.
+        output_name (string): Filename of output video.
+        vid_path (string): Filepath of output video.
+        fps (int): Frames per second of video to save.
+    """
+    Path(VID_PATH).mkdir(parents=True, exist_ok=True)
+    out = cv2.VideoWriter(os.path.join(VID_PATH, DATE_TIME + ".mp4"),
+                          cv2.VideoWriter_fourcc(*'mp4v'),
+                          fps, (source[0].shape[1], source[0].shape[0]))
+    for frame in source:
+        out.write(frame)
+    out.release()
+    
+
+
+def run_rmhc(mode, gens):
     """
     Run a RMHC in evogym. 
 
@@ -57,11 +83,11 @@ def run_rmhc(gens, show=True):
         (ndarray, fitness): The fittest genome the RMHC finds and its fitness.
     """
 
-    os.mkdir(EXPER_DIR)  #generate special directory for results.
+    os.mkdir(os.path.join(ROOT_DIR, EXPER_DIR))  #generate special directory for results.
 
     iters = NUM_ITERS
     genome = np.random.rand(NUM_ACTUATORS * 2)
-    best_fitness = run_simulation(iters, genome, show)
+    best_fitness = run_simulation(iters, genome, mode)
 
     print("Starting fitness:", best_fitness)
     fitness_by_gen = np.array([])  #array of fitness
@@ -77,7 +103,7 @@ def run_rmhc(gens, show=True):
             for x in mutated_genome
         ])
 
-        new_fitness = run_simulation(iters, mutated_genome, show)
+        new_fitness = run_simulation(iters, mutated_genome, mode)
 
         fitness_by_gen = np.append(fitness_by_gen, new_fitness)
 
@@ -91,7 +117,7 @@ def run_rmhc(gens, show=True):
 
     # Show fittest genome
     print("Final fitness", best_fitness)
-    run_simulation(NUM_ITERS * 5, genome, fittest=True)
+    run_simulation(NUM_ITERS * 5, genome, mode, fittest=True)
     plot_scores(fitness_by_gen, best_fitness_by_gen, gens)
 
     return (genome, best_fitness)
@@ -99,7 +125,7 @@ def run_rmhc(gens, show=True):
 
 def run_simulation(iters,
                    genome,
-                   show=True,
+                   mode,
                    fittest=False):  #if fittest, then track action
     """
     Runs a single simulation of a given genome.
@@ -117,10 +143,10 @@ def run_simulation(iters,
     """
 
     # Create world
-    world = EvoWorld.from_json(os.path.join('world_data', ENV_FILENAME))
+    world = EvoWorld.from_json(os.path.join(ROOT_DIR, 'world_data', ENV_FILENAME))
 
     # Add robot
-    robot = WorldObject.from_json(os.path.join('world_data', ROBOT_FILENAME))
+    robot = WorldObject.from_json(os.path.join(ROOT_DIR, 'world_data', ROBOT_FILENAME))
 
     world.add_from_array(name='robot',
                          structure=robot.get_structure(),
@@ -180,23 +206,20 @@ def run_simulation(iters,
         reward = com_2[0] - com_1[0]
         fitness += reward
 
-        if show:
-            viewer.render('screen', verbose=True)
     viewer.close()
 
     if fittest:
         action_array = np.asarray(action_list)
         plot_action(action_array)
         run_simulation_from_action(
-            iters, action_array, True,
-            True)  #Yeah, this is a hack, I know. I'm sorry.
+            iters, action_array, mode, True)  #Yeah, this is a hack, I know. I'm sorry.
 
     return fitness
 
 
 def run_simulation_from_action(iters,
                                given_actions,
-                               show=True,
+                               mode,
                                fittest=False):  #if fittest, then track action
     """
     Runs a single sped-up simulation of a given collection of action arrays.
@@ -212,10 +235,11 @@ def run_simulation_from_action(iters,
     """
 
     # Create world
-    world = EvoWorld.from_json(os.path.join('world_data', ENV_FILENAME))
+    # Create world
+    world = EvoWorld.from_json(os.path.join(ROOT_DIR, 'world_data', ENV_FILENAME))
 
     # Add robot
-    robot = WorldObject.from_json(os.path.join('world_data', ROBOT_FILENAME))
+    robot = WorldObject.from_json(os.path.join(ROOT_DIR, 'world_data', ROBOT_FILENAME))
 
     world.add_from_array(name='robot',
                          structure=robot.get_structure(),
@@ -239,6 +263,8 @@ def run_simulation_from_action(iters,
     viewer = EvoViewer(sim)
     viewer.track_objects('robot')
 
+    video_frames = []
+
     fitness = 0
 
     action_list = []
@@ -259,9 +285,18 @@ def run_simulation_from_action(iters,
             print(action)
             action_list.append(action)
 
-        if show:
+        if mode == "s":
             viewer.render('screen', verbose=True)
+        elif mode == "v":
+            video_frames.append(viewer.render(verbose=False, mode="rgb_array"))
+        elif mode == "b":
+            viewer.render('screen', verbose=True)
+            video_frames.append(viewer.render(verbose=False, mode="rgb_array"))
+
     viewer.close()
+
+    if mode in ["v", "b"]:
+        create_video(video_frames)
 
     if fittest:
         action_array = np.asarray(action_list)
@@ -293,7 +328,7 @@ def plot_scores(fit_func_scores, fit_func_scores_best, gen_number):
     plt.plot(gen_array, fit_func_scores, label="at gen")
     plt.plot(gen_array, fit_func_scores_best, label="best by gen")
     plt.legend(loc='upper center')
-    plt.savefig(EXPER_DIR + "/" + plottitle + '.png')
+    plt.savefig(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + '.png'))
     plt.close()
 
 
@@ -329,18 +364,18 @@ def plot_action(action_arrays, sped=False):
 
     plt.legend(loc='upper center')
     if sped:
-        plt.savefig(EXPER_DIR + "/" + plottitle + ' (sped).png')
+        plt.savefig(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + ' (sped).png'))
     else:
-        plt.savefig(EXPER_DIR + "/" + plottitle + '.png')
+        plt.savefig(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + '.png'))
     plt.close()
 
     #Save voxel data for later examination
     df = pd.DataFrame(voxels_list)
     if sped:
-        df.to_excel(EXPER_DIR + "/" + plottitle + ' (sped).xlsx',
+        df.to_excel(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + ' (sped).xlsx'),
                     index=False)
     else:
-        df.to_excel(EXPER_DIR + "/" + plottitle + '.xlsx', index=False)
+        df.to_excel(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + '.xlsx'), index=False)
 
     #plot individual voxels
     for i in range(len(voxels_list)):  #I USE i!!!!!
@@ -367,14 +402,25 @@ def plot_voxel(stepcount_array, voxel_action, voxel_num, sped=False):
     plt.plot(stepcount_array, voxel_action, label="voxel: " + str(voxel_num))
     plt.legend(loc='upper center')
     if sped:
-        plt.savefig(EXPER_DIR + "/" + plottitle + ' (sped).png')
+        plt.savefig(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + ' (sped).png'))
     else:
-        plt.savefig(EXPER_DIR + "/" + plottitle + '.png')
+        plt.savefig(os.path.join(ROOT_DIR, EXPER_DIR + "/" + plottitle + '.png'))
     plt.close()
 
 
 if __name__ == "__main__":
-    run_rmhc(GENS, False)
+    parser = argparse.ArgumentParser(description='RL')
+    parser.add_argument(
+        '--mode',  # headless, screen, video, both h, s, v, b
+        help='s-screen, v-video, b-both',
+        default="b")
+    parser.add_argument('--gens',
+                        type=float,
+                        default=1000,
+                        help='sigma value for cma-es')
+    args = parser.parse_args()
+
+    run_rmhc(args.mode, args.gens)
 
 # TWO PROOFS:
 # "can" action and replay it sped up vs normal. Robot should act totally different
