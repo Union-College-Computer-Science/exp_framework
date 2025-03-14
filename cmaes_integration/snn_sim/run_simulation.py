@@ -53,7 +53,8 @@ def create_video(source, output_name, vid_path, fps=FPS):
                           cv2.VideoWriter_fourcc(*'mp4v'),
                           fps, (source[0].shape[1], source[0].shape[0]))
     for frame in source:
-        out.write(frame)
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        out.write(frame_bgr)
     out.release()
 
 def group_list(flat_list: list, n: int) -> list:
@@ -137,19 +138,19 @@ def run(iters, genome, mode, vid_name=None, vid_path=None):
             epsilon = 1e-10  # Prevent division by zero
 
             # Step 1: Compute the difference between current and initial corner distances
-            delta_distances = corner_distances - init_corner_distances
+            delta_distances = corner_distances / init_corner_distances
 
             # Step 2: Scale the difference by the inverse of initial corner distances
-            scaled_differences = delta_distances / (init_corner_distances + epsilon)
+            # scaled_differences = delta_distances / (init_corner_distances + epsilon)
 
             # Step 3: Normalize scaled differences between [-1, 1]
-            arr_min = np.min(scaled_differences)
-            arr_max = np.max(scaled_differences)
+            arr_min = np.min(delta_distances)
+            arr_max = np.max(delta_distances)
 
-            if arr_max != arr_min:  # Avoid division by zero in normalization
-                normalized_distances = 2 * (scaled_differences - arr_min) / (arr_max - arr_min) - 1
-            else:
-                normalized_distances = np.zeros_like(scaled_differences)
+            #if arr_max != arr_min:  # Avoid division by zero in normalization
+            #    normalized_distances = 2 * (scaled_differences - arr_min) / (arr_max - arr_min) - 1
+            #else:
+            #    normalized_distances = np.zeros_like(scaled_differences)
 
             # Use the normalized distances as input
             action = snn_controller.get_lengths(corner_distances)

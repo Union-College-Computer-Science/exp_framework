@@ -31,7 +31,7 @@ ENV_FILENAME = "simple_environment_long.json"
 ROBOT_FILENAME = "walkbot4billion.json"
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATE_TIME = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+DATE_TIME = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 VID_PATH = os.path.join(ROOT_DIR, "videos")
 
 EXPER_DIR = 'score_plots_2/' + ROBOT_FILENAME[:-5] + " " + time.asctime(
@@ -50,11 +50,12 @@ def create_video(source, fps=50):
         fps (int): Frames per second of video to save.
     """
     Path(VID_PATH).mkdir(parents=True, exist_ok=True)
-    out = cv2.VideoWriter(os.path.join(VID_PATH, DATE_TIME + ".mp4"),
+    out = cv2.VideoWriter(os.path.join(VID_PATH, (DATE_TIME + ".mp4")),
                           cv2.VideoWriter_fourcc(*'mp4v'),
                           fps, (source[0].shape[1], source[0].shape[0]))
     for frame in source:
-        out.write(frame)
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        out.write(frame_bgr)
     out.release()
     
 
@@ -413,7 +414,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--mode',  # headless, screen, video, both h, s, v, b
         help='s-screen, v-video, b-both',
-        default="b")
+        default="v")
     parser.add_argument('--gens',
                         type=float,
                         default=1000,
