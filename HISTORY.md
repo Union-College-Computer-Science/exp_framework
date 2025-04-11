@@ -13,6 +13,10 @@ Feb 11th | By Abhay Kashyap
 - Script reshapes the flat array into an array of shape (NUM_SNN * PARAMS_PER_SNN)
 and then returns a list of dictionaries explicitly separating weights and biases of each SNN
 
+Apr 10th | By Takumi Kojima
+- bugfix of best_individual_latest regarding the directory path
+- change the default setting best_individual_latest
+
 ### Introducing snn to evogym pipeline
 Thurs. Feb 13th | Luodi Wang | SNN output to evogym through .json file
 - Saving the output into a json file from a mock (random) input
@@ -45,7 +49,6 @@ Feb 17th | Luodi Wang
 - Successfully completed robot configuration with its locations of corners from bestbot.json
 - Run inputs through the SNN
 - and we've now finally outputted actuator control values
-
 
 Feb 17th | Abhay Kashyap
 - Merged all utility functions for SNN (eg. cmaes output => snn w&b; getting snn outputs, etc.) into one class

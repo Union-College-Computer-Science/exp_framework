@@ -17,7 +17,7 @@ from snn_sim.run_simulation import run
 ITERS = 1000
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-PARENTDIR = Path(__file__).parent.parent.resolve()
+PARENTDIR = Path(__file__).parent.resolve()
 GENOME_START_INDEX = 3
 FILEFOLDER = "data"
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--mode', #headless, screen, video, both h, s, v, b
         help='mode for output. h-headless , s-screen, v-video, b-both',
-        default="v")
+        default="s")
 
     
     args = parser.parse_args()
