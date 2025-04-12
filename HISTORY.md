@@ -123,3 +123,7 @@ April 6th | Hades Panlilio
 ### Install instructions
 April 7th | Matthew Meek
 - updated `INSTALL.md` for getting things working on the sudoless lab machines.
+
+### Pull Request Template
+April 11th | John Rieffel
+- added pull request template
