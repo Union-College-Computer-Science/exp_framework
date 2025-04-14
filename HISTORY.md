@@ -125,5 +125,6 @@ April 7th | Matthew Meek
 - updated `INSTALL.md` for getting things working on the sudoless lab machines.
 
 ###
-April 13th | Sam Appleton
+April 13th | Sam Appleton & Hades Panlilio
 - Created feature branch to start developing the notebook
+- Created python notebook for experiment development
