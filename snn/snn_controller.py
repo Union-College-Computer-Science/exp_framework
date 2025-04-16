@@ -221,7 +221,6 @@ class SNNController:
                     df.loc[len(df)] = duty_cycle_row
 
         # Generate file
-        date_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         data_folder =  Path(os.path.join(_project_root, "cmaes_framework","data","snn_logs"))
         Path(data_folder).mkdir(parents=True, exist_ok=True)
         csv_path = os.path.join(data_folder, log_filename)

@@ -16,6 +16,7 @@ January 29th, 2025
 import os
 import argparse
 import pathlib
+from pathlib import Path
 import pandas as pd
 from snn_sim.run_simulation import run
 
@@ -52,10 +53,11 @@ def run_indvididual(generation, mode, filename, logs):
     genome = row.values.tolist()[0][GENOME_START_INDEX:]
 
     # Generate video name using times
-    vid_name = filename + "_gen" + str(generation)
     vid_path = os.path.join(this_dir, "data", "videos")
+    real_filename = Path(vid_path).resolve().name.split(".")[0]
+    vid_name = real_filename + "_gen_" + str(generation)
 
-    run(ITERS, genome, mode, vid_name, vid_path, logs)
+    run(ITERS, genome, mode, vid_name, vid_path, logs, (real_filename + ".csv"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='RL')

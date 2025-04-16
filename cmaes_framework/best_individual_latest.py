@@ -52,6 +52,7 @@ def visualize_best(mode, logs, filename="latest.csv"):
     """
 
     path = os.path.join(PARENTDIR, filename)
+    os.makedirs("data", exist_ok=True)
 
     while True:
         if os.path.exists(path):
@@ -61,22 +62,22 @@ def visualize_best(mode, logs, filename="latest.csv"):
                 best_fitness = min(df["best_fitness"])
                 row = df.loc[df['best_fitness'] == best_fitness]
                 genome = row.values.tolist()[0][GENOME_START_INDEX:]
-                generation = row.values.tolist()[0][0]
+                generation = int(row.values.tolist()[0][0])
                 this_dir = pathlib.Path(__file__).parent.resolve()
-                vid_name = filename + "_gen" + str(generation)
                 vid_path = os.path.join(this_dir, "data", "videos")
 
                 print("\n\n\nFitness: ", best_fitness)
 
-                real_path = Path(path).resolve().name
+                real_filename = Path(path).resolve().name.split(".")[0]
+                vid_name = real_filename + "_gen_" + str(generation)
 
                 # Make video directory if we're making a video.
                 if mode in ["v", "b"]:
                     os.makedirs(os.path.join("data", "videos"), exist_ok=True)
-                    run(ITERS, genome, mode, vid_name, vid_path, logs, real_path)
+                    run(ITERS, genome, mode, vid_name, vid_path, logs, (real_filename + ".csv"))
                     quit()
                 elif mode in ["s","h"]:
-                    run(ITERS, genome, mode, None, None, logs, real_path)
+                    run(ITERS, genome, mode, None, None, logs, (real_filename + ".csv"))
                     if logs:
                         quit()
 
