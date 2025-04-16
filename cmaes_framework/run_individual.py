@@ -37,7 +37,7 @@ def run_indvididual(generation, mode, filename, logs):
 
     # Make video directory if we're making a video.
     if mode in ["v", "b"]:
-        os.makedirs("videos", exist_ok=True)
+        os.makedirs(os.path.join("data", "videos"), exist_ok=True)
 
     this_dir = pathlib.Path(__file__).parent.resolve()
 
@@ -53,7 +53,7 @@ def run_indvididual(generation, mode, filename, logs):
 
     # Generate video name using times
     vid_name = filename + "_gen" + str(generation)
-    vid_path = os.path.join(this_dir, "videos")
+    vid_path = os.path.join(this_dir, "data", "videos")
 
     run(ITERS, genome, mode, vid_name, vid_path, logs)
 

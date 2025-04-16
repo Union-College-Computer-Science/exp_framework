@@ -137,3 +137,8 @@ April 14th | James Gaskell
 - Edited best individual to create logs
 - Updated requirements for the correct version of matplotlib
 - Fixed symlink for MacOS
+
+### Data file structure
+April 16th | James Gaskell
+- Edited the data file structure to include symlink for latest data and grouping of videos, logs and genomes
+- Edited creation of logs - one log per genome for tidiness

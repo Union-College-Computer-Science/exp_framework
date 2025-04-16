@@ -64,21 +64,21 @@ def visualize_best(mode, logs, filename="latest.csv"):
                 generation = row.values.tolist()[0][0]
                 this_dir = pathlib.Path(__file__).parent.resolve()
                 vid_name = filename + "_gen" + str(generation)
-                vid_path = os.path.join(this_dir, "videos")
+                vid_path = os.path.join(this_dir, "data", "videos")
 
-                print("Fitness: ", best_fitness)
+                print("\n\n\nFitness: ", best_fitness)
+
+                real_path = Path(path).resolve().name
 
                 # Make video directory if we're making a video.
                 if mode in ["v", "b"]:
-                    os.makedirs("videos", exist_ok=True)
-                    run(ITERS, genome, mode, vid_name, vid_path, logs)
+                    os.makedirs(os.path.join("data", "videos"), exist_ok=True)
+                    run(ITERS, genome, mode, vid_name, vid_path, logs, real_path)
                     quit()
-                else:
-                    run(ITERS, genome, "s", None, None, logs)
+                elif mode in ["s","h"]:
+                    run(ITERS, genome, mode, None, None, logs, real_path)
                     if logs:
                         quit()
-                    else:
-                        continue
 
             except ValueError as e:
                 continue
@@ -98,8 +98,18 @@ if __name__ == "__main__":
 
     
     args = parser.parse_args()
+
+    logs = args.logs
+
+    if logs.lower() in ('yes', 'true', 't', '1'):
+        logs = True
+    elif logs.lower() in ('no', 'false', 'f', '0'):
+        logs = False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
     
-    visualize_best(args.mode, bool(args.logs))
+    visualize_best(args.mode, logs)
 
         
     

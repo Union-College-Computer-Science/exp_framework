@@ -15,7 +15,7 @@ def load_logs(file_path):
     return pd.read_csv(file_path)
 
 
-def plot_neuron_logs(df, snn_id, layer, neuron_id):
+def plot_neuron_logs(df, xlim, snn_id, layer, neuron_id):
     """Plot logs for a specific neuron from dataframe."""
     
     neuron_df = df[(df['SNN'] == snn_id) &
@@ -62,10 +62,11 @@ def plot_neuron_logs(df, snn_id, layer, neuron_id):
     ax2.legend()
     ax2.grid(True)
 
+    plt.xlim(0, xlim)
     plt.tight_layout()
     plt.show()
 
-def plot_snn_spiketrains(df, snn_id):
+def plot_snn_spiketrains(df, xlim, snn_id):
     """Plot spike trains for all neurons in an SNN with colored lines per neuron."""
     snn_df = df[(df['SNN'] == snn_id) & (df['log'] == 'firelog')]
     snn_df = snn_df.sort_values(by=['layer', 'neuron']).reset_index(drop=True)
@@ -92,9 +93,10 @@ def plot_snn_spiketrains(df, snn_id):
     plt.title(f'SNN {snn_id} Spike Trains')
     plt.grid(True, axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
+    plt.xlim(0, xlim)
     plt.show()
 
-def plot_snn_activation_levels(df, snn_id):
+def plot_snn_activation_levels(df, xlim, snn_id):
     """Plot activation levels for all neurons in an SNN."""
     snn_df = df[(df['SNN'] == snn_id) & (df['log'] == 'levellog')]
 
@@ -111,10 +113,11 @@ def plot_snn_activation_levels(df, snn_id):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
+    plt.xlim(0, xlim)
     plt.show()
 
 
-def plot_snn_dutycycles(df, snn_id):
+def plot_snn_dutycycles(df, xlim, snn_id):
     """Plot duty cycles for all neurons in an SNN."""
     snn_df = df[(df['SNN'] == snn_id) & (df['log'] == 'dutycyclelog')]
 
@@ -132,4 +135,5 @@ def plot_snn_dutycycles(df, snn_id):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
+    plt.xlim(0, xlim)
     plt.show()

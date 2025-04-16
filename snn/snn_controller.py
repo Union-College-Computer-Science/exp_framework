@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import sys
 import matplotlib.pyplot as plt
 from snn.model_struct import SpikyNet
 
@@ -20,6 +21,15 @@ _current_file = os.path.abspath(__file__)
 _project_root = os.path.dirname(os.path.dirname(_current_file))
 ROBOT_DATA_PATH = os.path.join(_project_root, "morpho_demo", "world_data",
                                "bestbot.json")
+
+def is_windows():
+    """
+    Checks if the operating system is Windows.
+
+    Returns:
+        bool: True if the OS is Windows, False otherwise.
+    """
+    return os.name == 'nt' or sys.platform.startswith('win')
 
 class SNNController:
     """Class to handle SNN input/output processing."""
@@ -39,7 +49,6 @@ class SNNController:
             output_size (int): Number of outputs.
             robot_config (str): A robot's .json file.
         """
-
         self.snns = []
         self.num_snn = 0  # Number of spiking neural networks (actuators)
         self.inp_size = inp_size
@@ -170,7 +179,7 @@ class SNNController:
 
         return lengths
     
-    def generate_output_csv(self):
+    def generate_output_csv(self, log_filename):
         """
         Generates an output csv log file for activation level, firelog, and firing frequency for
         each neuron in each SNN.
@@ -212,11 +221,27 @@ class SNNController:
                     df.loc[len(df)] = duty_cycle_row
 
         # Generate file
-        date_time = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-        Path(os.path.join(_project_root, "cmaes_framework", "snn_log")).mkdir(parents=True, exist_ok=True)
-        csv_path = os.path.join(os.path.join(_project_root, "cmaes_framework", "snn_log", f"{date_time}.csv"))
+        date_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        data_folder =  Path(os.path.join(_project_root, "cmaes_framework","data","snn_logs"))
+        Path(data_folder).mkdir(parents=True, exist_ok=True)
+        csv_path = os.path.join(data_folder, log_filename)
 
         df.to_csv(csv_path, index=False)
+
+        link = (os.path.join(_project_root, "cmaes_framework","snn_log","latest_data.csv"))
+
+        # Set up latest.csv symlink
+        if os.path.exists(link):
+            os.remove(link)
+
+        if is_windows():
+            os.symlink(csv_path, link)
+        else:
+            try:
+                os.unlink(link)
+            except FileNotFoundError:
+                pass
+            os.system("ln -s " + csv_path + " " + link)
 
 
     def get_fire_log(self):

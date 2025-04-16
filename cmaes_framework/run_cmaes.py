@@ -40,7 +40,7 @@ SNN_INPUT_SHAPE = 72
 MEAN_ARRAY = [0.0] * SNN_INPUT_SHAPE
 
 # Num of sim time steps
-ITERS = 100
+ITERS = 500
 
 
 VERBOSE = False
@@ -73,9 +73,9 @@ def run(mode, gens, sigma_val):
     csv_header = ['generation', 'best_fitness', "best_so_far"]
     csv_header.extend([f"weight{i}" for i in range(SNN_INPUT_SHAPE)])
 
-    Path(os.path.join(ROOT_DIR, "data")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(ROOT_DIR, "data", "genomes")).mkdir(parents=True, exist_ok=True)
 
-    csv_path = os.path.join(ROOT_DIR, "data", f"{DATE_TIME}.csv")
+    csv_path = os.path.join(ROOT_DIR, "data" , "genomes", f"{DATE_TIME}.csv")
 
     # Set up latest.csv symlink
     if os.path.exists(os.path.join("cmaes_framework", "latest.csv")):
@@ -100,7 +100,7 @@ def run(mode, gens, sigma_val):
            bounds[i] = (0, 2000)
 
     # Init CMA
-    optimizer = CMA(mean=np.array(MEAN_ARRAY), sigma=sigma_val, bounds=np.array(bounds), population_size=12, lr_adapt=True)
+    optimizer = CMA(mean=np.array(MEAN_ARRAY), sigma=sigma_val, bounds=np.array(bounds), population_size=12, lr_adapt=True,)
 
     best_fitness_so_far = run_simulation.FITNESS_OFFSET
 
@@ -141,7 +141,7 @@ def run(mode, gens, sigma_val):
         # If --mode s, v, or b show/save best individual from generation
         if mode in ["s", "b", "v"]:
             vid_name = DATE_TIME + "_gen" + str(generation)
-            vid_path = os.path.join(ROOT_DIR, "videos", DATE_TIME)
+            vid_path = os.path.join(ROOT_DIR, "data", "videos", DATE_TIME)
 
             run_simulation.run(ITERS, best_sol[GENOME_INDEX], mode, vid_name, vid_path)
 
