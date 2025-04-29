@@ -2,7 +2,6 @@
 Module for running SNN outputs with proper input/output handling.
 
 Authors: Abhay Kashyap, Atharv Tekurkar
-Modified by: Hades Panlilio
 """
 
 from datetime import datetime
@@ -37,7 +36,7 @@ class SNNController:
 
     def __init__(self,
                  inp_size,
-                 hidden_sizes,
+                 hidden_size,
                  output_size,
                  robot_config=ROBOT_DATA_PATH):
         """
@@ -46,14 +45,14 @@ class SNNController:
 
         Parameters:
             inp_size (int): Number of inputs for each SNN
-            hidden_sizes (list): List of numbers of nodes in hidden layers.
+            hidden_size (int): Number of nodes in the hidden layer.
             output_size (int): Number of outputs.
             robot_config (str): A robot's .json file.
         """
         self.snns = []
         self.num_snn = 0  # Number of spiking neural networks (actuators)
         self.inp_size = inp_size
-        self.hidden_sizes = hidden_sizes
+        self.hidden_size = hidden_size
         self.output_size = output_size
         self._load_robot_config(robot_config)
 
@@ -105,42 +104,28 @@ class SNNController:
         flat_vector = np.array(cmaes_out)
         
         # Compute parameters for each SNN
-        params_per_snn = 0
-        layer_input_size = self.inp_size
+        params_per_hidden_layer = (self.inp_size + 1) * self.hidden_size
+        params_per_output_layer = (self.hidden_size + 1) * self.output_size
+        params_per_snn = params_per_hidden_layer + params_per_output_layer
 
-        # Sum hidden layers
-        for hidden_size in self.hidden_sizes:
-            params_per_snn += (layer_input_size + 1) * hidden_size
-            layer_input_size = hidden_size
-
-        # Output layer
-        params_per_snn += (layer_input_size + 1) * self.output_size
+        flat_vector = np.array(cmaes_out)  # np.array(pipeline.get_cmaes_out())
 
         if flat_vector.size != (self.num_snn * params_per_snn):
-            raise ValueError(f"Expected CMA-ES output vector of size "
-                             f"{self.num_snn * params_per_snn}, got {flat_vector.size}.")
+            raise ValueError(f"Expected CMA-ES output vector of size \
+                             {(self.num_snn * params_per_snn)}, got {flat_vector.size}."
+                             )
 
+        # Reshape the flat vector to a 2D array: each row corresponds to one SNN.
         reshaped = flat_vector.reshape((self.num_snn, params_per_snn))
 
+        # For each SNN, split the parameters into weights and biases.
         snn_parameters = {}
 
-        for snn_idx, params_per_net in enumerate(reshaped):
-            layer_weights = []
-            start = 0
-            layer_input_size = self.inp_size
-
-            # Hidden layers
-            for hidden_size in self.hidden_sizes:
-                num_params = (layer_input_size + 1) * hidden_size
-                layer_weights.append(params_per_net[start:start + num_params])
-                start += num_params
-                layer_input_size = hidden_size
-
-            # Output layer
-            output_params = params_per_net[start:]
-
+        for snn_idx, params_per_snn in enumerate(reshaped):
+            hidden_params = params_per_snn[:params_per_hidden_layer]
+            output_params = params_per_snn[params_per_hidden_layer:]
             snn_parameters[snn_idx] = {
-                'hidden_layers': layer_weights,
+                'hidden_layer': hidden_params,
                 'output_layer': output_params
             }
 

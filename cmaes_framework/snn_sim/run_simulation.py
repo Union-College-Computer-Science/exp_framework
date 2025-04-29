@@ -68,7 +68,11 @@ def group_list(flat_list: list, n: int) -> list:
     return [list(flat_list[i:i+n]) for i in range(0, len(flat_list), n)]
 
 
+<<<<<<< HEAD
 def run(iters, genome, mode, hidden_sizes, vid_name=None, vid_path=None, snn_logs=False, log_filename=None):
+=======
+def run(iters, genome, mode, vid_name=None, vid_path=None, snn_logs=False, log_filename=None, spike_decay=PIKE_DECAY_DEFAULT, robot_config=ROBOT_FILENAME):
+>>>>>>> parent of b03e1aa (Merge branch 'main' into run_experiment)
     """
     Runs a single simulation of a given genome.
 

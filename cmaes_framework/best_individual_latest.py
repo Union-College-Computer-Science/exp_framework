@@ -15,12 +15,8 @@ import numpy as np
 from snn_sim.run_simulation import run
 
 ITERS = 1000
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
 PARENTDIR = Path(__file__).parent.resolve()
 GENOME_START_INDEX = 3
-HIDDEN_SIZES = [2]
 GENOME_FOLDER = Path(os.path.join(PARENTDIR,"data","latest_genome"))
 
 def wait_for_file(path):
@@ -94,10 +90,10 @@ def visualize_best(mode, logs):
                 # Make video directory if we're making a video.
                 if mode in ["v", "b"]:
                     os.makedirs(vid_path, exist_ok=True)
-                    run(ITERS, genome, mode, HIDDEN_SIZES, vid_name, vid_path, logs, log_filename)
+                    run(ITERS, genome, mode, vid_name, vid_path, logs, log_filename)
                     quit()
                 elif mode in ["s", "h"]:
-                    run(ITERS, genome, mode, HIDDEN_SIZES, None, None, logs, log_filename)
+                    run(ITERS, genome, mode, None, None, logs, log_filename)
                     if logs:
                         quit()
             except Exception as e:
@@ -110,12 +106,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--mode', help='mode for output. h-headless , s-screen, v-video, b-both', default="s")
     parser.add_argument(
-        '--mode', #headless, screen, video, both h, s, v, b
-        help='mode for output. h-headless , s-screen, v-video, b-both',
-        default="s")
-    parser.add_argument(
         '--logs', type=str, help='whether to generate SNN logs (true/false)', default="True")
-
 
     args = parser.parse_args()
 
