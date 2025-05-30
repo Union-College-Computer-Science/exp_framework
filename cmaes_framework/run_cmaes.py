@@ -45,7 +45,7 @@ ROBOT_CONFIG_PATH_DEFAULT = "bestbot.json"
 SNN_INPUT_METHOD_DEFAULT = "corners"
 DEFAULT_SCALE_SNN_INPUTS = True
 
-HIDDEN_SIZES = [2]
+HIDDEN_SIZES = [1]
 
 VERBOSE = False
 
@@ -90,7 +90,7 @@ def run(mode,
                               robot_config_path)
 
     NUM_ACTUATORS, SNN_INPUT_SHAPE = snn_controller.compute_genome_size(
-        robot_path, snn_input_method, HIDDEN_SIZES)
+        robot_path, snn_input_method, hidden_sizes)
 
     # Mean genome
     MEAN_ARRAY = [0.0] * SNN_INPUT_SHAPE
@@ -229,13 +229,17 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_sizes',
                         type=int,
                         nargs='+',
-                        default=[2],
+                        default=[1],
                         help='list of hidden layer sizes')
+    parser.add_argument('--input_method',
+                        type=str,
+                        default=SNN_INPUT_METHOD_DEFAULT,
+                        help='input method for the SNN (default: "corners")')
     args = parser.parse_args()
 
     run(args.mode,
         args.gens,
         args.sigma,
         args.hidden_sizes,
-        snn_input_method="all_dist",
+        args.input_method,
         scale_snn_inputs=False)
