@@ -66,7 +66,7 @@ def get_best_from_all_csvs():
     return best_row, best_file
 
 
-def visualize_best(mode, logs):
+def visualize_best(mode, logs, hidden_sizes, input_method):
     """
     Continuously run the best individual across all CSVs.
     """
@@ -94,10 +94,10 @@ def visualize_best(mode, logs):
                 # Make video directory if we're making a video.
                 if mode in ["v", "b"]:
                     os.makedirs(vid_path, exist_ok=True)
-                    run(ITERS, genome, mode, HIDDEN_SIZES, vid_name, vid_path, logs, log_filename)
+                    run(ITERS, genome, mode, hidden_sizes, vid_name, vid_path, logs, log_filename, snn_input_method=input_method)
                     quit()
                 elif mode in ["s", "h"]:
-                    run(ITERS, genome, mode, HIDDEN_SIZES, None, None, logs, log_filename)
+                    run(ITERS, genome, mode, hidden_sizes, None, None, logs, log_filename, snn_input_method=input_method)
                     if logs:
                         quit()
             except Exception as e:
@@ -110,11 +110,18 @@ if __name__ == "__main__":
     parser.add_argument(
         '--mode', help='mode for output. h-headless , s-screen, v-video, b-both', default="s")
     parser.add_argument(
-        '--mode', #headless, screen, video, both h, s, v, b
-        help='mode for output. h-headless , s-screen, v-video, b-both',
-        default="s")
-    parser.add_argument(
         '--logs', type=str, help='whether to generate SNN logs (true/false)', default="True")
+    parser.add_argument(
+        '--hidden_sizes',
+        type=int,
+        nargs='+',
+        help='hidden layer sizes for the SNN (default: [2])',
+        default=[1])
+    parser.add_argument(
+        '--input_method',
+        type=str,
+        help='input method for the SNN (default: "corners")',
+        default="corners")
 
 
     args = parser.parse_args()
@@ -127,4 +134,4 @@ if __name__ == "__main__":
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-    visualize_best(args.mode, logs)
+    visualize_best(args.mode, logs, args.hidden_sizes, args.input_method)
