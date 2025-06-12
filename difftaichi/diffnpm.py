@@ -4,6 +4,11 @@ import os
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from snn.snn_controller_difftaichi import SNNController
+
+snn_controller = None
+scene = None
+_fields_allocated = False  # flag to check if fields are allocated
 
 real = ti.f32
 ti.init(default_fp=real, arch=ti.gpu, flatten_if=True)
@@ -18,11 +23,10 @@ inv_dx = 1 / dx
 dt = 1e-3
 p_vol = 1
 E = 10
-# TODO: update
 mu = E
 la = E
 max_steps = 2048
-steps = 1024
+steps = 30
 gravity = 3.8
 target = [0.8, 0.2]
 
@@ -88,6 +92,30 @@ def clear_particle_grad():
 def clear_actuation_grad():
     for t, i in actuation:
         actuation[t, i] = 0.0
+
+# compute snn actuation
+
+
+def compute_snn_actuation(t: int):
+    # inputs of all actuators = x and y position of the center
+    inputs = []
+    for aid in range(n_actuators):
+        x_sum = np.array([0.0, 0.0])
+        count = 0
+        for i in range(n_particles):
+            if actuator_id[i] == aid:
+                x_sum += np.array(x[t, i].to_list())
+                count += 1
+        if count == 0:
+            inputs.append([0.0, 0.0])
+        else:
+            inputs.append((x_sum / count).tolist())
+
+    snn_outs = snn_controller.get_lengths(inputs)
+    for i in range(n_actuators):
+        act = (snn_outs[i][0] - 0.6) / (1.6 - 0.6)  # Normalize to [0,1]
+        act = max(min(act, 1.0), 0.0)
+        actuation[t, i] = 2.0 * (act - 0.5)  # Scale to [-1,1]
 
 
 @ti.kernel
@@ -228,7 +256,7 @@ def compute_loss():
 @ti.ad.grad_replaced
 def advance(s):
     clear_grid()
-    compute_actuation(s)
+    compute_snn_actuation(s)
     p2g(s)
     grid_op()
     g2p(s)
@@ -243,7 +271,6 @@ def advance_grad(s):
     g2p.grad(s)
     grid_op.grad()
     p2g.grad(s)
-    compute_actuation.grad(s)
 
 
 @ti.kernel
@@ -251,20 +278,89 @@ def apply_patch_actuation(t: ti.i32):
     for p in range(n_particles):
         act_id = actuator_id[p]
         if act_id != -1:
-            expand = (t // 100) % 2 == 0  # 100ステップごとに拡張・収縮を切替
+            expand = (t // 100) % 2 == 0  # expand in every 100 step
             F_target = ti.Matrix([[1.3, 0.0], [0.0, 0.8]]) if expand else ti.Matrix(
                 [[0.7, 0.0], [0.0, 1.2]])
-            F[t, p] += 0.05 * (F_target - F[t, p])  # 緩やかに近づける
+            F[t, p] += 0.05 * (F_target - F[t, p])  # making closer gradually
+
+
+def initialize():
+    """
+    Function to initialize the simulation
+    """
+    global scene, snn_controller, n_actuators, n_particles, n_solid_particles, _fields_allocated
+
+    # print("Resetting and re-initializing Taichi runtime for a new run...")
+    # ti.reset()
+    # ti.init(default_fp=real, arch=ti.gpu, flatten_if=True)
+
+    print("Initializing simulation scene and SNN controller...")
+    scene = Scene()
+    robot(scene)
+    scene.finalize()
+
+    # update global variables
+    n_actuators = scene.num_actuators  # set in robot()
+    n_particles = scene.n_particles
+    n_solid_particles = scene.n_solid_particles
+
+    # allocate fields
+    if not _fields_allocated:
+        print("Allocating Taichi fields for the first time...")
+        allocate_fields()
+        _fields_allocated = True
+
+    # Initialize snn controller
+    max_aid = max(scene.actuator_id) if scene.actuator_id else -1
+    types = [3] * (max_aid + 1)
+    snn_controller = SNNController(
+        inp_size=2,
+        hidden_sizes=[10],
+        output_size=1,
+        robot_config=None,  # we dont have this file in difftaichi
+        types_list=types
+    )
+    print("Initialization complete.")
 
 
 def forward(total_steps=steps):
-    # simulation
+    print("forward() start")
     for s in range(total_steps - 1):
+        print(f"  step {s}/{total_steps}")
         advance(s)
-        apply_patch_actuation(s)  # [追加] 各ステップでアクチュエーション適用
+        apply_patch_actuation(s)  # apply actuation in each step
     x_avg[None] = [0, 0]
     compute_x_avg()
     compute_loss()
+    print("forward() end")
+
+
+def run(genome, steps_to_run=steps):
+    """
+    Fitness func to be called from CMA-ES
+    Get genome and return fitness 
+    """
+    global scene, snn_controller
+
+    if scene is None or snn_controller is None:
+        raise RuntimeError(
+            "diffnpm.initialize() must be called before running a simulation.")
+
+    # 1. reset the particles
+    for i in range(scene.n_particles):
+        x[0, i] = scene.x[i]
+        F[0, i] = [[1, 0], [0, 1]]
+        actuator_id[i] = scene.actuator_id[i]
+        particle_type[i] = scene.particle_type[i]
+
+    # 2. set the snn weights
+    snn_controller.set_snn_weights(genome)
+
+    # 3. execute simulation
+    forward(steps_to_run)
+
+    # 4. fitness (-loss)
+    return -loss[None]
 
 
 class Scene:
@@ -276,6 +372,7 @@ class Scene:
         self.particle_type = []
         self.offset_x = 0
         self.offset_y = 0
+        self.num_actuators = 0
 
     def add_rect(self, x, y, w, h, actuation, ptype=1):
         if ptype == 0:
@@ -308,6 +405,7 @@ class Scene:
         print('n_solid', n_solid_particles)
 
     def set_n_actuators(self, n_act):
+        self.num_actuators = n_act
         global n_actuators
         n_actuators = n_act
 
@@ -349,8 +447,68 @@ def visualize(s, folder):
     gui.circles(pos=particles, color=colors, radius=1.5)
     gui.line((0.05, 0.02), (0.95, 0.02), radius=3, color=0x0)
 
-    os.makedirs(folder, exist_ok=True)
-    gui.show(f'{folder}/{s:04d}.png')
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+        # gui.show(f'{folder}/{s:04d}.png') // if you want to show it, comment this out
+        img = gui.get_image()
+        ti.tools.imwrite(img, f'{folder}/{s:04d}.png')
+    else:  # if folder is not assigned, just show in a console
+        gui.show()
+
+
+def live_visualize(genome, steps_to_run=100):
+    """
+    get genome and visualize in live
+    """
+    global scene, snn_controller
+    if scene is None or snn_controller is None:
+        raise RuntimeError(
+            "diffnpm.initialize() must be called before running a simulation.")
+
+    # reset simulation
+    for i in range(scene.n_particles):
+        x[0, i] = scene.x[i]
+        F[0, i] = [[1, 0], [0, 1]]
+        actuator_id[i] = scene.actuator_id[i]
+        particle_type[i] = scene.particle_type[i]
+
+    # set snn weights
+    snn_controller.set_snn_weights(genome)
+
+    # execute simulation and visualization in live
+    for s in range(steps_to_run - 1):
+        advance(s)
+        # by each 2 frame just in case (Sometimes visualizes are too heavy)
+        if s % 2 == 0:
+            visualize(s, folder=None)
+
+
+def run_and_visualize(genome, output_folder, steps_to_run=300):
+    """
+    Execute simulation and store the results
+    """
+    global scene, snn_controller
+    if scene is None or snn_controller is None:
+        raise RuntimeError(
+            "diffnpm.initialize() must be called before running a simulation.")
+
+    # reset the particles
+    for i in range(scene.n_particles):
+        x[0, i] = scene.x[i]
+        F[0, i] = [[1, 0], [0, 1]]
+        actuator_id[i] = scene.actuator_id[i]
+        particle_type[i] = scene.particle_type[i]
+
+    # set snn weights
+    snn_controller.set_snn_weights(genome)
+
+    # while simulating, visualize each 2 step and store.
+    print(f"Running simulation for visualization... Saving to {output_folder}")
+    for s in range(steps_to_run - 1):
+        advance(s)
+        if s % 10 == 0:
+            visualize(s, output_folder)
+    print("Visualization finished.")
 
 
 def main():

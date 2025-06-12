@@ -167,7 +167,7 @@ April 28th | Hades Panlilio
 - Updated files that run the simulation to accept new parameter and multiple layers
 
 ### run_experiment Update & parameterize spiky decay and robot config
-April 28th | Takumi
+April 28th | Takumi Kojima
 - Updated run_experiment with all possible params for now
 - parameterized spiky decay
 - parameterized robot_confi
@@ -176,3 +176,8 @@ April 28th | Takumi
 April 29th | Thomas Breimer
 - Added infrastructure for alternative SNN input options
 - Added distance to all other actuators SNN input option
+
+### Difftaichi folder
+June 12th | Takumi Kojima
+- Added difftaichi folder which runs experiment with difftaichi
+- [WARN] it still has some bugs in visualization and it does not show successful evolution.
